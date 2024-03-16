@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "list.h"
 
 typedef struct{
     int pid;
@@ -8,7 +10,9 @@ typedef struct{
     char message[40]; 
 } PCB;
 
-PCB* readyQueue[3] = {NULL};
+List* readyQueueHigh;
+List* readyQueueNormal;
+List* readyQueueLow;
 
 void createProcess(int priority){
     PCB* newProcess = (PCB*)malloc(sizeof(PCB));
@@ -20,10 +24,33 @@ void createProcess(int priority){
     static int nextPID = 1;
     newProcess->pid = nextPID++;
     newProcess->priority = priority;
-    printf(newProcess->state, "ready");
+    strcpy(newProcess->state, "ready");
     newProcess->message[0] = '\0';
     
-    readyQueue[priority] = newProcess;
+    switch(priority) {
+        case 0: // High priority
+            if (List_append(readyQueueHigh, newProcess) == LIST_FAIL) {
+                printf("Failed to add process to high priority ready queue\n");
+                free(newProcess);
+            }
+            break;
+        case 1: // Normal priority
+            if (List_append(readyQueueNormal, newProcess) == LIST_FAIL) {
+                printf("Failed to add process to normal priority ready queue\n");
+                free(newProcess);
+            }
+            break;
+        case 2: // Low priority
+            if (List_append(readyQueueLow, newProcess) == LIST_FAIL) {
+                printf("Failed to add process to low priority ready queue\n");
+                free(newProcess);
+            }
+            break;
+        default:
+            printf("Invalid priority level\n");
+            free(newProcess);
+            break;
+    }
 
     printf("Process with pID %d create and placed in ready Q with priority: %d", newProcess->pid, priority);
 }
@@ -54,6 +81,10 @@ void handleForkCommand(int currentPID){
 }
 
 int main() {
+    readyQueueHigh = List_create();
+    readyQueueNormal = List_create();
+    readyQueueLow = List_create();
+    
     createProcess(0);
     createProcess(1);
     createProcess(2);
