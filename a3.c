@@ -220,11 +220,27 @@ int main() {
     readyQueueHigh = List_create();
     readyQueueNormal = List_create();
     readyQueueLow = List_create();
-    
+
+    runningProcessQueue = List_create();
+    PCB *init;
+    init = malloc(sizeof(PCB));
+	init->pid = 0;
+	init->priority = 0;
+	strcpy(init->state, "ready");
+    strcpy(init->message, "init Process");
+    List_append(runningProcessQueue, init);
+
     createProcess(0);
+    strcpy(init->state, "ready");
     createProcess(1);
     createProcess(2);
+    PCB* newP = List_curr(readyQueueHigh);
+    List_append(runningProcessQueue, newP);
+    List_trim(readyQueueHigh);
+    quantum();
 
+    //forkP();
+    //kill(3);
     return 0;
 
 }
