@@ -123,6 +123,37 @@ void kill(int pid){
 
 }
 
+
+void CPUScheduler(){
+    PCB* nextProcess;
+    if(List_count(readyQueueHigh) > 0){
+        nextProcess = List_trim(readyQueueHigh);
+    }else if(List_count(readyQueueNormal) > 0){
+        nextProcess = List_trim(readyQueueNormal);
+    }else if(List_count(readyQueueLow) > 0){
+        nextProcess = List_trim(readyQueueNormal);
+    }else{
+        nextProcess = List_last(runningProcessQueue);
+        strcpy(nextProcess->state, "RUNNING");
+    }
+
+    if (nextProcess) {
+        if (List_append(runningProcessQueue, nextProcess)) {
+			printf("FAIL: CPU Scheduler\n");
+		}
+		else {
+            strcpy(nextProcess->state, "RUNNING");
+			printf("SUCCESS: CPU Scheduler\n");
+            printf("pid: %d is scheduled to run next. \n", nextProcess->pid);
+            // if (strlen(nextProcess->message->body) != 0) {
+            //     printf(nextProcess->message);
+            // }
+            // resetTheMsg(nextProcess->message);  // reset the msg body, src, dest
+            // strcpy(nextProcess->message, "");
+        }
+	}
+}
+
 int main() {
     readyQueueHigh = List_create();
     readyQueueNormal = List_create();
