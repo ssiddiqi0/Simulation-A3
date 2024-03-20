@@ -170,6 +170,52 @@ void exitP(){
     }
     CPUScheduler();
 }
+
+
+void quantum(){
+    PCB* currentRunning = List_last(runningProcessQueue);
+    if(currentRunning){
+        if(currentRunning->pid == 0){
+            strcpy(currentRunning->state, "READY");
+        }
+        else{
+            PCB* removedProces = List_trim(runningProcessQueue);
+            strcpy(removedProces->state, "READY");
+            if (removedProces->priority == 0 || removedProces->priority == 1) {
+                removedProces->priority = removedProces->priority+1;
+            }
+            if (removedProces != NULL) {
+                switch(removedProces->priority) {
+                    case 0: // High priority
+                        if (List_append(readyQueueHigh, removedProces) == LIST_FAIL) {
+                            printf("Failed to add process to high priority ready queue\n");
+                        }
+                        break;
+                    case 1: // Normal priority
+                        if (List_append(readyQueueNormal, removedProces) == LIST_FAIL) {
+                            printf("Failed to add process to normal priority ready queue\n");
+                        }
+                        break;
+                    case 2: // Low priority
+                        if (List_append(readyQueueLow, removedProces) == LIST_FAIL) {
+                            printf("Failed to add process to low priority ready queue\n");
+                        }
+                        break;
+                    default:
+                        printf("Invalid priority level\n");
+                        //free(newProcess);
+                        break;
+                }
+                // free(removedProces);
+                printf("Quantum - pid:%d is now in ready queue.\n", removedProces->pid);
+		    }
+        }
+    }else{
+        printf("Quantum: NO PROCESS RUNNING TO STOP\n");
+    }
+    CPUScheduler();
+}
+
 int main() {
     readyQueueHigh = List_create();
     readyQueueNormal = List_create();
