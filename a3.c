@@ -73,6 +73,56 @@ void forkP(){
         printf("Cannot Fork: no process is running\n");
     }
 }
+
+bool compareInt(void* pItem, void* pComparisonArg) {
+    return ((*(int*)pItem) == (*(int*)pComparisonArg));
+}
+
+void kill(int pid){
+    PCB* kill_process;
+    int status;
+    if(List_count(readyQueueHigh) == 0 && List_count(readyQueueNormal) == 0 && List_count(readyQueueLow) == 0 && List_count(runningProcessQueue) == 0){
+        printf("Kill: no process in system\n");
+    }
+    else if(pid == 0){     
+        if(List_count(readyQueueHigh) == 0 && List_count(readyQueueNormal) == 0 && List_count(readyQueueLow) == 0 && List_count(runningProcessQueue) == 1){
+            kill_process = List_last(runningProcessQueue);
+            if(kill_process->pid == 0) {
+                if(List_remove(runningProcessQueue)!=NULL){
+                    printf("Kill: Init with pid: %d\n", pid);
+                }
+            }
+        }
+        else{
+            printf("Cannot Kill init process when there are other process in system\n");
+        }
+    }
+    else if (List_search(readyQueueHigh, compareInt, &pid) != NULL) {
+        kill_process = List_curr(readyQueueHigh);
+        if(List_remove(readyQueueHigh)!=NULL){
+            printf("Kill: readyQueueHigh with pid: %d\n", pid);
+        }
+    } else if (List_search(readyQueueNormal, compareInt, &pid) != NULL) {
+        kill_process = List_curr(readyQueueNormal);
+        if(List_remove(readyQueueNormal)!=NULL){
+            printf("Kill: readyQueueNormal with pid: %d\n", pid);
+        }
+    } else if (List_search(readyQueueLow, compareInt, &pid) != NULL) {
+        kill_process = List_curr(readyQueueLow);
+        if(List_remove(readyQueueLow)!=NULL){
+            printf("Kill: readyQueueLow with pid: %d\n", pid);
+        }
+    } else if (List_search(runningProcessQueue, compareInt, &pid) != NULL) {
+        kill_process = List_curr(runningProcessQueue);
+        if(List_remove(runningProcessQueue)!=NULL){
+            printf("Kill: runningProcessQueue with pid: %d\n", pid);
+        }
+    }else{
+        printf("Kill: not found in search\n");
+    }
+
+}
+
 int main() {
     readyQueueHigh = List_create();
     readyQueueNormal = List_create();
