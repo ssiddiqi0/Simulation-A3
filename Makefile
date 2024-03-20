@@ -1,4 +1,4 @@
 make:
-	gcc -o s-talk list.o a3.o
+	gcc -o A3 list.o a3.c
 clean:
-	rm s-talk
+	rm A3
