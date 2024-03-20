@@ -14,6 +14,8 @@ List* readyQueueHigh;
 List* readyQueueNormal;
 List* readyQueueLow;
 
+static int nextPID = 1;
+
 void createProcess(int priority){
     PCB* newProcess = (PCB*)malloc(sizeof(PCB));
     if (newProcess == NULL){
@@ -21,7 +23,7 @@ void createProcess(int priority){
         return;
     }
 
-    static int nextPID = 1;
+    
     newProcess->pid = nextPID++;
     newProcess->priority = priority;
     strcpy(newProcess->state, "ready");
@@ -75,7 +77,7 @@ void handleForkCommand(int currentPID){
     if(newProcess == NULL){
         printf("Failed to allocate memory");
         return;
-    }
+    } 
     // Not finished
 
 }
