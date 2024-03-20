@@ -13,6 +13,7 @@ typedef struct{
 List* readyQueueHigh;
 List* readyQueueNormal;
 List* readyQueueLow;
+List* runningProcessQueue;
 
 static int nextPID = 1;
 
@@ -22,8 +23,6 @@ void createProcess(int priority){
         printf("Failed to allocate memory");
         return;
     }
-
-    
     newProcess->pid = nextPID++;
     newProcess->priority = priority;
     strcpy(newProcess->state, "ready");
@@ -53,35 +52,27 @@ void createProcess(int priority){
             free(newProcess);
             break;
     }
-
-    printf("Process with pID %d create and placed in ready Q with priority: %d", newProcess->pid, priority);
+    printf("Process with pID %d create and placed in ready Q with priority: %d\n", newProcess->pid, priority);
 }
-void handleForkCommand(int currentPID){
 
-    PCB *currentProcess = NULL;
-    int priority = -1;
-
-    for (int i=0; i<3; i++){
-        if(readyQueue[i]!=NULL && readyQueue[i]->pid == currentPID){
-            currentProcess = readyQueue[i];
-            priority = i;
-            break;
+void forkP(){
+    PCB* currentProcess = List_curr(runningProcessQueue);
+    if(currentProcess != NULL){
+        if(currentProcess->pid == 0){
+            printf("Current running process is Init :- Cannot fork process\n");
         }
+        else{
+            if(currentProcess){
+                createProcess(currentProcess->priority);
+                printf("Forked the current running process: %d\n", currentProcess->pid);
+            }else{
+                printf("Cannot Fork: no process is running\n");
+            }
+        }
+    }else{
+        printf("Cannot Fork: no process is running\n");
     }
-
-    if(currentProcess == NULL){
-        printf("Error: Process with PID %d not found \n", currentPID);
-        return;
-    }
-    PCB *newProcess = (PCB*)malloc(sizeof(PCB));
-    if(newProcess == NULL){
-        printf("Failed to allocate memory");
-        return;
-    } 
-    // Not finished
-
 }
-
 int main() {
     readyQueueHigh = List_create();
     readyQueueNormal = List_create();
