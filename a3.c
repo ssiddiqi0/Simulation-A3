@@ -153,7 +153,23 @@ void CPUScheduler(){
         }
 	}
 }
-
+void exitP(){
+    if(List_count(readyQueueHigh) == 0 && List_count(readyQueueNormal) == 0 && List_count(readyQueueLow) == 0 && List_count(runningProcessQueue) == 1){
+            PCB* kill_process = List_last(runningProcessQueue);
+            if(kill_process->pid == 0) {
+                if(List_remove(runningProcessQueue)!=NULL){
+                    printf("Kill: Init with pid: %d\n", kill_process->pid );
+                }
+            }
+    }
+    else if(List_count(runningProcessQueue) == 2){
+        PCB* p = List_last(runningProcessQueue);
+        if(List_remove(runningProcessQueue) != NULL){
+            printf("Kill: Init with pid: %d\n", p->pid);
+        }
+    }
+    CPUScheduler();
+}
 int main() {
     readyQueueHigh = List_create();
     readyQueueNormal = List_create();
