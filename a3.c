@@ -223,6 +223,58 @@ void quantum(){
     CPUScheduler();
 }
 
+void Send(int pid, const char* msg){
+    PCB* procs;
+    PCB* senderID = List_last(runningProcessQueue);   
+    // checks if there's a process in the receive queue waiting to receive a message with the specified PID
+    if (List_search(receiveOperationQueue, compareInt, &pid) != NULL) {
+        procs = List_curr(receiveOperationQueue);
+        procs->procmsg->sender= senderID->pid;
+        procs->procmsg->receiver= pid;
+        strcpy(procs->procmsg->type, "SEND");
+        strcpy(procs->procmsg->message, msg);
+        strcpy(procs->state, "READY");
+        PCB* p = List_remove(receiveOperationQueue);
+        switch(p->priority) {
+            case 0: // High priority
+                if (List_append(readyQueueHigh, p) == LIST_FAIL) {
+                    printf("Failed to add process to high priority ready queue\n");
+                }
+                break;
+            case 1: // Normal priority
+                if (List_append(readyQueueNormal, p) == LIST_FAIL) {
+                    printf("Failed to add process to normal priority ready queue\n");
+                }
+                break;
+            case 2: // Low priority
+                if (List_append(readyQueueLow, p) == LIST_FAIL) {
+                    printf("Failed to add process to low priority ready queue\n");
+                }
+                break;
+            default:
+                printf("Invalid priority level\n");
+                break;
+        }
+        printf("Send successful: Process %d sent message to Process %d\n", senderID->pid, pid);
+    }
+    else{
+        procs = findPCBByPID(pid);
+        if(procs != NULL && pid != 0 ){  // not sure if we want init process to send message but it cannot be blocked
+            PROC_MSG* pmsg = malloc(sizeof(pmsg));
+            pmsg->message = malloc(sizeof(char) * 100);
+            pmsg->sender = senderID->pid;
+            pmsg->receiver = pid;
+            strcpy(pmsg->type, "SEND");
+            strcpy(pmsg->message, msg);
+            List_append(msgQueue, pmsg); // list_add
+            strcpy(senderID->state, "BLOCKED");
+            PCB* p = List_trim(runningProcessQueue);
+            List_append(sendBlockedQueue, p);
+            CPUScheduler();
+            printf("Sender Blocked: Process %d sent message to Process %d\n", senderID->pid, pid);
+        }
+    }
+}
 
 void newSemaphore(int semaphoreID, int initialValue) {
     if (semaphoreID < 0 || semaphoreID >= 5) {
