@@ -473,12 +473,16 @@ int main() {
     readyQueueLow = List_create();
 
     runningProcessQueue = List_create();
+    sendBlockedQueue = List_create();
+    receiveOperationQueue =  List_create();
+    msgQueue = List_create();
+    
     PCB *init;
     init = malloc(sizeof(PCB));
 	init->pid = 0;
 	init->priority = 0;
 	strcpy(init->state, "ready");
-    strcpy(init->message, "init Process");
+    //strcpy(init->message, "init Process");
     List_append(runningProcessQueue, init);
 
     createProcess(0);
@@ -495,7 +499,6 @@ int main() {
     return 0;
 
 }
-
 
 /*
 
