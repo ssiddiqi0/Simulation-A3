@@ -3,24 +3,38 @@
 #include <string.h>
 #include "list.h"
 
+typedef struct PROC_MSG {
+	int receiver;
+    int sender;
+    char* type;
+	char* message;
+} PROC_MSG;
+
+
 typedef struct{
     int pid;
     int priority;
     char state[20];
-    char message[40]; 
+    //char message[40]; 
+    PROC_MSG *procmsg;
+    // PCB* next;
+    // PCB* prev;
 } PCB;
 
-typedef struct {
+typedef struct Semaphore {
     int value;
-    List* blockedProcesses;
+    PCB* blockedProcesses; // Queue of processes waiting on the semaphore
 } Semaphore;
 
-Semaphore semaphores[5];
 
 List* readyQueueHigh;
 List* readyQueueNormal;
 List* readyQueueLow;
 List* runningProcessQueue;
+List* sendBlockedQueue;
+List* receiveOperationQueue;
+List* msgQueue;
+
 
 static int nextPID = 1;
 
@@ -33,7 +47,14 @@ void createProcess(int priority){
     newProcess->pid = nextPID++;
     newProcess->priority = priority;
     strcpy(newProcess->state, "ready");
-    newProcess->message[0] = '\0';
+    PROC_MSG* newmsg = malloc(sizeof(PROC_MSG));
+	newmsg->message = malloc(sizeof(char) * 100);;
+    newmsg->message = "";
+    newmsg->sender = -1;
+    newmsg->receiver = -1;
+
+    newProcess->procmsg = newmsg;
+   
     
     switch(priority) {
         case 0: // High priority
@@ -60,6 +81,37 @@ void createProcess(int priority){
             break;
     }
     printf("Process with pID %d create and placed in ready Q with priority: %d\n", newProcess->pid, priority);
+}
+
+void CPUScheduler(){
+    PCB* nextProcess;
+    if(List_count(readyQueueHigh) > 0){
+        nextProcess = List_trim(readyQueueHigh);
+    }else if(List_count(readyQueueNormal) > 0){
+        nextProcess = List_trim(readyQueueNormal);
+    }else if(List_count(readyQueueLow) > 0){
+        nextProcess = List_trim(readyQueueNormal);
+    }else{
+        nextProcess = List_last(runningProcessQueue);
+        strcpy(nextProcess->state, "RUNNING");
+    }
+
+    if (nextProcess) {
+        if (List_append(runningProcessQueue, nextProcess)) {
+			printf("FAIL: CPU Scheduler\n");
+		}
+		else {
+            strcpy(nextProcess->state, "RUNNING");
+			printf("SUCCESS: CPU Scheduler\n");
+            printf("pid: %d is scheduled to run next. \n", nextProcess->pid);
+            if (strlen(nextProcess->procmsg->message) != 0) {
+                printf("%s",nextProcess->procmsg->message);
+            }
+            strcpy(nextProcess->procmsg->message, "");
+            nextProcess->procmsg->sender = -1;
+            nextProcess->procmsg->receiver = -1;
+        }
+	}
 }
 
 void forkP(){
