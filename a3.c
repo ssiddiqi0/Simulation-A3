@@ -353,6 +353,49 @@ void procinfo(int pid) {
 		printf("Given Pid is invalid. Not found");
 	}
 }
+void PrintList(List* list){
+    PCB *p = List_first(list);
+    while (p) {
+        printf("Running Process Queue \n");
+        printf("Process ID:: %i\n", p->pid);
+        printf("Process Priority: %i\n", p->priority);
+        printf("Process State: %s\n", p->state);
+        printf("Process Msg: %s\n", p->procmsg->message);
+        p = List_next(list);
+    }
+}
+	
+void totalinfo() {
+	PCB* prc = List_last(runningProcessQueue);
+    printf("Running Process Queue \n");
+	printf("Process ID:: %i\n", prc->pid);
+	printf("Process Priority: %i\n", prc->priority);
+	printf("Process State: %s\n", prc->state);
+	printf("Process Msg: %s\n", prc->procmsg->message);
+	
+	// Ready QUEUE
+	printf("READY QUEUES");
+    PrintList(readyQueueHigh);
+    PrintList(readyQueueNormal);
+    PrintList(readyQueueLow);
+
+	// Send QUEUE
+	printf("SEND QUEUE");
+	PrintList(sendBlockedQueue);
+
+    // Receive QUEUE
+	printf("RECEIVE QUEUE");
+	PrintList(receiveOperationQueue);
+
+    // MSG QUEUE
+	printf("MESSAGE QUEUE");
+	PrintList(msgQueue);
+
+    // SEM QUEUE
+	printf("SEM QUEUES");
+
+
+}
 void newSemaphore(int semaphoreID, int initialValue) {
     if (semaphoreID < 0 || semaphoreID >= 5) {
         printf("Invalid semaphore ID\n");
