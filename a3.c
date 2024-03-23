@@ -276,6 +276,29 @@ void Send(int pid, const char* msg){
     }
 }
 
+void receive(){
+    // check if there is msg for receiver 
+    PCB* receiver = List_last(runningProcessQueue);   
+    int receiverPid = receiver->pid;
+    if (List_search(msgQueue, compareInt, &receiverPid) != NULL) {
+        PCB* procs = List_curr(msgQueue);
+        printf("-------");
+        printf("Sender Message:");
+        printf("Type: %s\n", procs->procmsg->type);
+        printf("Sender pid: %d - ", procs->procmsg->sender);
+        printf("Message: %s\n", procs->procmsg->message);
+        printf("-------");
+        List_remove(msgQueue);
+    }else{
+        if (receiverPid != 0) {
+			receiver = List_trim(runningProcessQueue);
+            strcpy(receiver->state, "BLOCKED");
+			List_prepend(receiveOperationQueue, receiver);
+			CPUScheduler();
+		}
+    }
+}
+
 void newSemaphore(int semaphoreID, int initialValue) {
     if (semaphoreID < 0 || semaphoreID >= 5) {
         printf("Invalid semaphore ID\n");
