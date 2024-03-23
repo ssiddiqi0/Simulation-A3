@@ -299,6 +299,48 @@ void receive(){
     }
 }
 
+void reply(int pid, char *msg){
+    // unblocks sender and delivers reply : success or failure
+    PCB* receiver = List_last(runningProcessQueue);   
+     if (List_search(sendBlockedQueue, compareInt, &pid) != NULL) {
+        PCB* procs = List_curr(sendBlockedQueue);
+ 
+        procs->procmsg->sender= receiver->pid;
+        procs->procmsg->receiver= pid;
+        strcpy(procs->procmsg->type, "REPLY");
+        strcpy(procs->procmsg->message, msg);
+
+        strcpy(procs->state, "READY");
+        PCB* p = List_remove(sendBlockedQueue);
+
+        if (p != NULL) {
+                switch(p->priority) {
+                    case 0: // High priority
+                        if (List_append(readyQueueHigh, p) == LIST_FAIL) {
+                            printf("Failed to add process to high priority ready queue\n");
+                        }
+                        break;
+                    case 1: // Normal priority
+                        if (List_append(readyQueueNormal, p) == LIST_FAIL) {
+                            printf("Failed to add process to normal priority ready queue\n");
+                        }
+                        break;
+                    case 2: // Low priority
+                        if (List_append(readyQueueLow, p) == LIST_FAIL) {
+                            printf("Failed to add process to low priority ready queue\n");
+                        }
+                        break;
+                    default:
+                        printf("Invalid priority level\n");
+                        break;
+                }
+                printf("Reply - pid:%d is now in ready queue.\n", p->pid);
+		    }
+    }else{
+        printf("reply: FAIL, PID not found");
+    }
+}
+
 void newSemaphore(int semaphoreID, int initialValue) {
     if (semaphoreID < 0 || semaphoreID >= 5) {
         printf("Invalid semaphore ID\n");
