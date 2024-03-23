@@ -10,6 +10,13 @@ typedef struct{
     char message[40]; 
 } PCB;
 
+typedef struct {
+    int value;
+    List* blockedProcesses;
+} Semaphore;
+
+Semaphore semaphores[5];
+
 List* readyQueueHigh;
 List* readyQueueNormal;
 List* readyQueueLow;
@@ -214,6 +221,55 @@ void quantum(){
         printf("Quantum: NO PROCESS RUNNING TO STOP\n");
     }
     CPUScheduler();
+}
+
+
+void newSemaphore(int semaphoreID, int initialValue) {
+    if (semaphoreID < 0 || semaphoreID >= 5) {
+        printf("Invalid semaphore ID\n");
+        return;
+    }
+    semaphores[semaphoreID].value = initialValue;
+    semaphores[semaphoreID].blockedProcesses = List_create();
+    printf("Semaphore %d initialized with value %d\n", semaphoreID, initialValue);
+}
+
+void semaphoreP(int semaphoreID) {
+    if (semaphoreID < 0 || semaphoreID >= 5) {
+        printf("Invalid semaphore ID\n");
+        return;
+    }
+    if (semaphores[semaphoreID].value > 0) {
+        semaphores[semaphoreID].value--;
+    } else {
+
+        PCB* currentProcess = List_curr(runningProcessQueue);
+        strcpy(currentProcess->state, "blocked");
+        List_append(semaphores[semaphoreID].blockedProcesses, currentProcess);
+        CPUScheduler(); // call scheduler?
+    }
+    printf("Process performed P operation on semaphore %d\n", semaphoreID);
+}
+
+void semaphoreV(int semaphoreID) {
+    if (semaphoreID < 0 || semaphoreID >= 5) {
+        printf("Invalid semaphore ID\n");
+        return;
+    }
+    semaphores[semaphoreID].value++;
+    if (List_count(semaphores[semaphoreID].blockedProcesses) > 0) {
+        PCB* unblockedProcess = List_trim(semaphores[semaphoreID].blockedProcesses);
+        strcpy(unblockedProcess->state, "ready");
+        switch(unblockedProcess->priority) {
+            case 0: List_prepend(readyQueueHigh, unblockedProcess); break;
+            case 1: List_prepend(readyQueueNormal, unblockedProcess); break;
+            case 2: List_prepend(readyQueueLow, unblockedProcess); break;
+            default: printf("Invalid priority level\n"); break;
+        }
+        printf("Process with pid %d unblocked from semaphore %d\n", unblockedProcess->pid, semaphoreID);
+    } else {
+        printf("No processes waiting on semaphore %d\n", semaphoreID);
+    }
 }
 
 int main() {
