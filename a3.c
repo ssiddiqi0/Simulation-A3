@@ -495,3 +495,66 @@ int main() {
     return 0;
 
 }
+
+
+/*
+
+void semaphoreP(int semaphoreID) {
+    if (semaphoreID < 0 || semaphoreID >= 5) {
+        printf("Invalid semaphore ID\n");
+        return;
+    }
+	PCB* currentProcess = ListLast(runningProcessQueue);
+	if (currentProcess->pid != 0) {
+		semaphores[semaphoreID].value--;
+		if (semaphores[semaphoreID].value < 0) {
+			currentProcess = ListTrim(runningProcessQueue);
+			strcpy(currentProcess->state, "BLOCKED");
+			List_append(semaphores[semaphoreID].blockedProcesses, currentProcess);
+			CPUScheduler(); // Call scheduler as current process is blocked
+		}
+
+	}else{
+		printf(" Init Process cannot perfor P operation");
+		return;
+	}
+    printf("Process performed P operation on semaphore %d\n", semaphoreID);
+}
+void V(int sid) {
+	if (semaphoreID < 0 || semaphoreID >= 5) {
+        printf("Invalid semaphore ID\n");
+        return;
+    }
+    semaphores[semaphoreID].value++;
+	if (semaphores[semaphoreID].value <= 0) {
+		PCB* p = ListTrim(semaphores[semaphoreID].blockedProcesses);
+        if(p!=NULL){
+            switch(p->priority) {
+                case 0: // High priority
+                    if (List_append(readyQueueHigh, p) == LIST_FAIL) {
+                        printf("Failed to add process to high priority ready queue\n");
+                    }
+                    break;
+                case 1: // Normal priority
+                    if (List_append(readyQueueNormal, p) == LIST_FAIL) {
+                        printf("Failed to add process to normal priority ready queue\n");
+                    }
+                    break;
+                case 2: // Low priority
+                    if (List_append(readyQueueLow, p) == LIST_FAIL) {
+                        printf("Failed to add process to low priority ready queue\n");
+                    }
+                    break;
+                default:
+                    printf("Invalid priority level\n");
+                    break;
+            }
+
+            strcpy(p->state, "READY");
+            List_trim(semaphores[semaphoreID].blockedProcesses);
+        }
+        printf("SUCCESS");
+        printf("pid: %i into READY QUEUE\n", p->pid);
+	}	
+}
+*/
