@@ -341,6 +341,18 @@ void reply(int pid, char *msg){
     }
 }
 
+void procinfo(int pid) {
+	PCB* prc = findPCBByPID(pid);
+	if (prc != NULL) {
+		printf("Process ID:: %i\n", prc->pid);
+		printf("Process Priority: %i\n", prc->priority);
+		printf("Process State: %s\n", prc->state);
+		printf("Process Msg: %s\n", prc->procmsg->message);
+	}
+	else {
+		printf("Given Pid is invalid. Not found");
+	}
+}
 void newSemaphore(int semaphoreID, int initialValue) {
     if (semaphoreID < 0 || semaphoreID >= 5) {
         printf("Invalid semaphore ID\n");
