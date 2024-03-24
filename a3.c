@@ -23,9 +23,10 @@ typedef struct{
 
 typedef struct Semaphore {
     int value;
-    PCB* blockedProcesses; // Queue of processes waiting on the semaphore
+    List* blockedProcesses; // Queue of processes waiting on the semaphore
 } Semaphore;
 
+Semaphore semaphores[5];
 
 List* readyQueueHigh;
 List* readyQueueNormal;
@@ -44,43 +45,64 @@ void createProcess(int priority){
         printf("Failed to allocate memory");
         return;
     }
+        // Allocate and initialize the process message structure
+    newProcess->procmsg = (PROC_MSG*)malloc(sizeof(PROC_MSG));
+    if (newProcess->procmsg == NULL) {
+        printf("Failed to allocate memory for process message\n");
+        free(newProcess); // Clean up previously allocated memory for the process
+        return;
+    }
+
+    // Initialize PROC_MSG fields
+    newProcess->procmsg->receiver = 0; // Assuming 0 indicates no receiver yet
+    newProcess->procmsg->sender = 0;   // Assuming 0 indicates no sender yet
+    newProcess->procmsg->type = malloc(sizeof(char) * 50); // Assuming type is a short string
+    strcpy(newProcess->procmsg->type, "none");            // Default type to "none"
+    newProcess->procmsg->message = malloc(sizeof(char) * 100); // Assuming message length of 100 chars
+    if (newProcess->procmsg->message != NULL) {
+        strcpy(newProcess->procmsg->message, "");           // Initialize message to empty string
+    }
     newProcess->pid = nextPID++;
     newProcess->priority = priority;
     strcpy(newProcess->state, "ready");
-    PROC_MSG* newmsg = malloc(sizeof(PROC_MSG));
-	newmsg->message = malloc(sizeof(char) * 100);;
-    newmsg->message = "";
-    newmsg->sender = -1;
-    newmsg->receiver = -1;
-
-    newProcess->procmsg = newmsg;
-   
-    
+ 
+  //  printf("State: %s\n", newProcess->state);
     switch(priority) {
         case 0: // High priority
             if (List_append(readyQueueHigh, newProcess) == LIST_FAIL) {
                 printf("Failed to add process to high priority ready queue\n");
                 free(newProcess);
+            } else {
+                printf("Process with pID %d create and placed in ready Q with priority: %d\n", newProcess->pid, priority);
+
             }
             break;
         case 1: // Normal priority
             if (List_append(readyQueueNormal, newProcess) == LIST_FAIL) {
                 printf("Failed to add process to normal priority ready queue\n");
                 free(newProcess);
+            } else{
+                printf("Process with pID %d create and placed in ready Q with priority: %d\n", newProcess->pid, priority);
+
             }
             break;
         case 2: // Low priority
             if (List_append(readyQueueLow, newProcess) == LIST_FAIL) {
                 printf("Failed to add process to low priority ready queue\n");
                 free(newProcess);
+            }else{
+                printf("Process with pID %d create and placed in ready Q with priority: %d\n", newProcess->pid, priority);
+
             }
             break;
         default:
             printf("Invalid priority level\n");
+            nextPID--;
             free(newProcess);
             break;
     }
-    printf("Process with pID %d create and placed in ready Q with priority: %d\n", newProcess->pid, priority);
+
+   
 }
 
 void CPUScheduler(){
@@ -441,6 +463,8 @@ void semaphoreP(int semaphoreID) {
         PCB* currentProcess = List_curr(runningProcessQueue);
         strcpy(currentProcess->state, "blocked");
         List_append(semaphores[semaphoreID].blockedProcesses, currentProcess);
+        List_remove(runningProcessQueue);
+        printf("Process id %d blocked\n", currentProcess->pid);
         CPUScheduler(); // call scheduler?
     }
     printf("Process performed P operation on semaphore %d\n", semaphoreID);
@@ -466,17 +490,16 @@ void semaphoreV(int semaphoreID) {
         printf("No processes waiting on semaphore %d\n", semaphoreID);
     }
 }
-
-int main() {
+void initSystem() {
+    // Initialize system lists
     readyQueueHigh = List_create();
     readyQueueNormal = List_create();
     readyQueueLow = List_create();
-
     runningProcessQueue = List_create();
     sendBlockedQueue = List_create();
-    receiveOperationQueue =  List_create();
+    receiveOperationQueue = List_create();
     msgQueue = List_create();
-    
+
     PCB *init;
     init = malloc(sizeof(PCB));
 	init->pid = 0;
@@ -484,18 +507,103 @@ int main() {
 	strcpy(init->state, "ready");
     //strcpy(init->message, "init Process");
     List_append(runningProcessQueue, init);
+    
 
-    createProcess(0);
-    strcpy(init->state, "ready");
-    createProcess(1);
-    createProcess(2);
-    PCB* newP = List_curr(readyQueueHigh);
-    List_append(runningProcessQueue, newP);
-    List_trim(readyQueueHigh);
-    quantum();
+}
 
-    //forkP();
-    //kill(3);
+int main() {
+
+
+    printf("Process Management Simulation\n");
+    initSystem();
+
+    char command;
+    int pid, semID, initValue, priority;
+    char message[100]; // Assuming messages are no longer than 100 characters
+
+    
+    while (1) {
+        printf("Enter command: ");
+        scanf(" %c", &command); // Note the space before %c to skip any leading whitespace
+
+        switch (toupper(command)) {
+            case 'C':
+                printf("Enter priority level (0, 1, 2)\n");
+                scanf("%d", &priority);
+                createProcess(priority);
+                break;
+            case 'F': // Fork
+                forkP();
+                break;
+            case 'K': // Kill
+                printf("Enter PID to kill: ");
+                scanf("%d", &pid);
+                kill(pid);
+                break;
+            case 'E': // Exit
+                exitP();
+                break;
+            case 'Q': // Quantum
+                quantum();
+                break;
+            case 'N':
+                printf("Please enter the semaphore ID (0-4): \n");
+                scanf("%d", &semID);
+                printf("Please enter the initial value: \n");
+                scanf("%d", &initValue);
+                newSemaphore(semID, initValue);
+                break;
+            case 'P':
+                printf("Please enter the semaphore ID (0-4): \n");
+                scanf("%d", &semID);
+                semaphoreP(semID);
+                break;
+            case 'V':
+                printf("Please enter the semaphore ID (0-4): \n");
+                scanf("%d", &semID);
+                semaphoreV(semID);
+                break;
+            case 'S': // Send
+                printf("Enter receiver PID: \n");
+                scanf("%d", &pid); 
+                getchar(); // Consume the newline character left in the input buffer
+                printf("Enter message: \n");
+                fgets(message, sizeof(message), stdin); // Read the message, including spaces
+                // Remove the newline character at the end of the message, if any
+                size_t len1 = strlen(message);
+                if (len1 > 0 && message[len1 - 1] == '\n') {
+                    message[len1 - 1] = '\0';
+                }
+                Send(pid, message);
+            case 'Y': // Reply
+                printf("Enter receiver PID: \n");
+                scanf("%d", &pid); // Read PID and message
+                getchar();
+                printf("Enter your message: \n");
+                fgets(message, sizeof(message), stdin); // Read the message, including spaces
+                // Remove the newline character at the end of the message, if any
+                size_t len = strlen(message);
+                if (len > 0 && message[len - 1] == '\n') {
+                    message[len - 1] = '\0';
+                }
+                reply(pid, message);
+                break;
+            case 'R': // Receive
+                receive();
+                break;
+            case 'I': // Process info
+                printf("Enter PID for info: ");
+                scanf("%d", &pid);
+                procinfo(pid);
+                break;
+            case 'T': // Total system info
+                totalinfo();
+                break;
+            default:
+                printf("Unknown command.\n");
+        }
+    }
+    
     return 0;
 
 }
