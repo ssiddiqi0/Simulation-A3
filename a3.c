@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "list.h"
+#include <ctype.h>
 
 typedef struct PROC_MSG {
 	int receiver;
