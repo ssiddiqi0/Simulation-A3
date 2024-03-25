@@ -331,17 +331,14 @@ void receive(){
     int receiverPid = receiver->pid;
     List_first(msgQueue);
     if (List_search(msgQueue, compareInt, &receiverPid) != NULL) {
-        printf("if part\n");
         PROC_MSG* procs = List_curr(msgQueue);
-        printf("-------\n");
+        printf("---- RECEIVE ---\n");
         printf("Sender Message:\n");
         printf("Type: %s\n", process_states[procs->type_index]);
         printf("Sender pid: %d - ", procs->sender);
         printf("Message: %s\n", procs->message);
-        printf("-------\n");
         List_remove(msgQueue);
     }else{
-        printf("else part\n");
         if (receiverPid != 0) {
 			receiver = List_trim(runningProcessQueue);
             strcpy(receiver->state, "BLOCKED");
