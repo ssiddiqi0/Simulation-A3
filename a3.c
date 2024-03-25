@@ -212,9 +212,6 @@ void exitP(){
             if(kill_process->pid == 0) {
                 if(List_remove(runningProcessQueue)!=NULL){
                     printf("Kill: Init with pid: %d\n", kill_process->pid );
-                    free(p->procmsg->message);
-                    free(p->procmsg);
-                    free(p);
                 }
             }
     }
@@ -222,6 +219,9 @@ void exitP(){
         PCB* p = List_last(runningProcessQueue);
         if(List_remove(runningProcessQueue) != NULL){
             printf("Kill: Init with pid: %d\n", p->pid);
+            free(p->procmsg->message);
+            free(p->procmsg);
+            free(p);
         }
     }
     CPUScheduler();
