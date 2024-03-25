@@ -155,6 +155,10 @@ bool compareInt(void* pItem, void* pComparisonArg) {
 void kill(int pid){
     PCB* kill_process;
     int status;
+    List_first(readyQueueHigh);
+    List_first(readyQueueNormal);
+    List_first(readyQueueLow);
+    List_last(runningProcessQueue);
     if(List_count(readyQueueHigh) == 0 && List_count(readyQueueNormal) == 0 && List_count(readyQueueLow) == 0 && List_count(runningProcessQueue) == 0){
         printf("Kill: no process in system\n");
     }
@@ -194,6 +198,11 @@ void kill(int pid){
     }else{
         printf("Kill: not found in search\n");
     }
+    // if(kill_process){
+    //     free(kill_process->procmsg->message);
+    //     free(kill_process->procmsg);
+    //     free(kill_process);
+    // }
 
 }
 
@@ -203,6 +212,9 @@ void exitP(){
             if(kill_process->pid == 0) {
                 if(List_remove(runningProcessQueue)!=NULL){
                     printf("Kill: Init with pid: %d\n", kill_process->pid );
+                    free(p->procmsg->message);
+                    free(p->procmsg);
+                    free(p);
                 }
             }
     }
