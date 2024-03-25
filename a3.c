@@ -46,23 +46,16 @@ void createProcess(int priority){
     }
     newProcess->pid = nextPID++;
     newProcess->priority = priority;
-    strcpy(newProcess->state, "ready");
+    strcpy(newProcess->state, "READY");
 
     newProcess->procmsg = (PROC_MSG*) malloc(sizeof (PROC_MSG));
-    newProcess->procmsg->message = (char*) malloc(sizeof(char) * 40);
     newProcess->procmsg->receiver = -1;
 	newProcess->procmsg->sender = -1;
     newProcess->procmsg->type_index = 0;
+
+    newProcess->procmsg->message = (char*) malloc(sizeof(char) * 100);
 	strcpy(newProcess->procmsg->message, "");
     
-
-    // PROC_MSG* newmsg = malloc(sizeof(PROC_MSG));
-	// newmsg->message = malloc(sizeof(char) * 100);
-    // strcpy(newmsg->message, "");
-    // newmsg->sender = -1;
-    // newmsg->receiver = -1;
-    // newProcess->procmsg = newmsg;
-   
     
     switch(priority) {
         case 0: // High priority
@@ -91,12 +84,6 @@ void createProcess(int priority){
     printf("Process with pID %d create and placed in ready Q with priority: %d\n", newProcess->pid, priority);
 }
 
-void reset_pm(PROC_MSG *pm) {
-	pm->receiver = -1;
-	pm->sender = -1;
-	strcpy(pm->message, "");
-	//memset(pm->body, (int) NULL, sizeof pm->body);
-}
 
 void CPUScheduler(){
     PCB* nextProcess;
@@ -119,16 +106,15 @@ void CPUScheduler(){
             strcpy(nextProcess->state, "RUNNING");
 			printf("SUCCESS: CPU Scheduler ");
             printf("pid: %d is scheduled to run next. \n", nextProcess->pid);
-            if (strlen(nextProcess->procmsg->message) != 0) {
-                printf("%s",nextProcess->procmsg->message);
-            }
-            // nextProcess->procmsg->message = "";
-            // nextProcess->procmsg->sender = -1;
-            // nextProcess->procmsg->receiver = -1;
-            reset_pm(nextProcess->procmsg);
+            nextProcess->procmsg->receiver = -1;
+            nextProcess->procmsg->sender = -1;
+            strcpy(nextProcess->procmsg->message, "");
+           
         }
 	}
 }
+
+
 
 void forkP(){
     PCB* currentProcess = List_curr(runningProcessQueue);
