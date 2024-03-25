@@ -105,7 +105,7 @@ void CPUScheduler(){
 		else {
             strcpy(nextProcess->state, "RUNNING");
 			printf("SUCCESS: CPU Scheduler ");
-            printf("pid: %d is scheduled to run next. \n", nextProcess->pid);
+            printf("pid: %d is running next. \n", nextProcess->pid);
             nextProcess->procmsg->receiver = -1;
             nextProcess->procmsg->sender = -1;
             strcpy(nextProcess->procmsg->message, "");
@@ -596,6 +596,7 @@ int main() {
                     message[len1 - 1] = '\0';
                 }
                 Send(pid, message);
+                break;
             case 'Y': // Reply
                 printf("Enter receiver PID: \n");
                 scanf("%d", &pid); // Read PID and message
