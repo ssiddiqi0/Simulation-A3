@@ -277,7 +277,6 @@ void Send(int pid, const char* msg){
     PCB* senderID = List_last(runningProcessQueue);   
     // checks if there's a process in the receive queue waiting to receive a message with the specified PID
     if (List_search(receiveOperationQueue, compareInt, &pid) != NULL) {
-        printf("seg fault in receiveing list \n");
         procs = List_curr(receiveOperationQueue);
         procs->procmsg->sender = senderID->pid;
         procs->procmsg->receiver = pid;
@@ -307,7 +306,6 @@ void Send(int pid, const char* msg){
         printf("Send successful: Process %d sent message to Process %d\n", senderID->pid, pid);
     }
     else{
-        printf("seg fault in else part of send list \n");
         procs = findPCBByPID(pid);
         if(procs != NULL && pid != 0 ){  // not sure if we want init process to send message but it cannot be blocked
             PROC_MSG* pmsg = malloc(sizeof(pmsg));
