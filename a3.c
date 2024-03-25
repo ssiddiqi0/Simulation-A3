@@ -98,14 +98,17 @@ void createProcess(int priority){
 void CPUScheduler(){
     PCB* nextProcess;
     if(List_count(readyQueueHigh) > 0){
-        nextProcess = List_trim(readyQueueHigh);
+        List_first(readyQueueHigh);
+        nextProcess = List_remove(readyQueueHigh);
     }else if(List_count(readyQueueNormal) > 0){
-        nextProcess = List_trim(readyQueueNormal);
+        List_first(readyQueueNormal);
+        nextProcess = List_remove(readyQueueNormal);
     }else if(List_count(readyQueueLow) > 0){
-        nextProcess = List_trim(readyQueueNormal);
+        List_first(readyQueueLow);
+        nextProcess = List_remove(readyQueueNormal);
     }else{
         nextProcess = List_last(runningProcessQueue);
-        strcpy(nextProcess->state, "RUNNING");
+        strcpy(nextProcess->state, "RUNNING"); // Init
     }
 
     if (nextProcess) {
