@@ -1,13 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "list.h"
 #include <ctype.h>
+#include "list.h"
+
 
 typedef struct PROC_MSG {
 	int receiver;
     int sender;
-    char* type;
+    int type_index;
 	char* message;
 } PROC_MSG;
 
@@ -16,18 +17,17 @@ typedef struct{
     int pid;
     int priority;
     char state[20];
-    //char message[40]; 
     PROC_MSG *procmsg;
-    // PCB* next;
-    // PCB* prev;
 } PCB;
 
 typedef struct Semaphore {
     int value;
-    List* blockedProcesses; // Queue of processes waiting on the semaphore
+    List* blockedProcesses; 
 } Semaphore;
 
 Semaphore semaphores[5];
+
+char *process_states[] = {"","SEND", "RECEIVE", "REPLY"};
 
 List* readyQueueHigh;
 List* readyQueueNormal;
@@ -36,8 +36,6 @@ List* runningProcessQueue;
 List* sendBlockedQueue;
 List* receiveOperationQueue;
 List* msgQueue;
-
-
 static int nextPID = 1;
 
 void createProcess(int priority){
@@ -46,64 +44,58 @@ void createProcess(int priority){
         printf("Failed to allocate memory");
         return;
     }
-        // Allocate and initialize the process message structure
-    newProcess->procmsg = (PROC_MSG*)malloc(sizeof(PROC_MSG));
-    if (newProcess->procmsg == NULL) {
-        printf("Failed to allocate memory for process message\n");
-        free(newProcess); // Clean up previously allocated memory for the process
-        return;
-    }
-
-    // Initialize PROC_MSG fields
-    newProcess->procmsg->receiver = 0; // Assuming 0 indicates no receiver yet
-    newProcess->procmsg->sender = 0;   // Assuming 0 indicates no sender yet
-    newProcess->procmsg->type = malloc(sizeof(char) * 50); // Assuming type is a short string
-    strcpy(newProcess->procmsg->type, "none");            // Default type to "none"
-    newProcess->procmsg->message = malloc(sizeof(char) * 100); // Assuming message length of 100 chars
-    if (newProcess->procmsg->message != NULL) {
-        strcpy(newProcess->procmsg->message, "");           // Initialize message to empty string
-    }
     newProcess->pid = nextPID++;
     newProcess->priority = priority;
     strcpy(newProcess->state, "ready");
- 
-  //  printf("State: %s\n", newProcess->state);
+
+    newProcess->procmsg = (PROC_MSG*) malloc(sizeof (PROC_MSG));
+    newProcess->procmsg->message = (char*) malloc(sizeof(char) * 40);
+    newProcess->procmsg->receiver = -1;
+	newProcess->procmsg->sender = -1;
+    newProcess->procmsg->type_index = 0;
+	strcpy(newProcess->procmsg->message, "");
+    
+
+    // PROC_MSG* newmsg = malloc(sizeof(PROC_MSG));
+	// newmsg->message = malloc(sizeof(char) * 100);
+    // strcpy(newmsg->message, "");
+    // newmsg->sender = -1;
+    // newmsg->receiver = -1;
+    // newProcess->procmsg = newmsg;
+   
+    
     switch(priority) {
         case 0: // High priority
             if (List_append(readyQueueHigh, newProcess) == LIST_FAIL) {
                 printf("Failed to add process to high priority ready queue\n");
                 free(newProcess);
-            } else {
-                printf("Process with pID %d create and placed in ready Q with priority: %d\n", newProcess->pid, priority);
-
             }
             break;
         case 1: // Normal priority
             if (List_append(readyQueueNormal, newProcess) == LIST_FAIL) {
                 printf("Failed to add process to normal priority ready queue\n");
                 free(newProcess);
-            } else{
-                printf("Process with pID %d create and placed in ready Q with priority: %d\n", newProcess->pid, priority);
-
             }
             break;
         case 2: // Low priority
             if (List_append(readyQueueLow, newProcess) == LIST_FAIL) {
                 printf("Failed to add process to low priority ready queue\n");
                 free(newProcess);
-            }else{
-                printf("Process with pID %d create and placed in ready Q with priority: %d\n", newProcess->pid, priority);
-
             }
             break;
         default:
             printf("Invalid priority level\n");
-            nextPID--;
             free(newProcess);
             break;
     }
+    printf("Process with pID %d create and placed in ready Q with priority: %d\n", newProcess->pid, priority);
+}
 
-   
+void reset_pm(PROC_MSG *pm) {
+	pm->receiver = -1;
+	pm->sender = -1;
+	strcpy(pm->message, "");
+	//memset(pm->body, (int) NULL, sizeof pm->body);
 }
 
 void CPUScheduler(){
@@ -125,14 +117,15 @@ void CPUScheduler(){
 		}
 		else {
             strcpy(nextProcess->state, "RUNNING");
-			printf("SUCCESS: CPU Scheduler\n");
+			printf("SUCCESS: CPU Scheduler ");
             printf("pid: %d is scheduled to run next. \n", nextProcess->pid);
             if (strlen(nextProcess->procmsg->message) != 0) {
                 printf("%s",nextProcess->procmsg->message);
             }
-            strcpy(nextProcess->procmsg->message, "");
-            nextProcess->procmsg->sender = -1;
-            nextProcess->procmsg->receiver = -1;
+            // nextProcess->procmsg->message = "";
+            // nextProcess->procmsg->sender = -1;
+            // nextProcess->procmsg->receiver = -1;
+            reset_pm(nextProcess->procmsg);
         }
 	}
 }
@@ -205,7 +198,6 @@ void kill(int pid){
 
 }
 
-
 void exitP(){
     if(List_count(readyQueueHigh) == 0 && List_count(readyQueueNormal) == 0 && List_count(readyQueueLow) == 0 && List_count(runningProcessQueue) == 1){
             PCB* kill_process = List_last(runningProcessQueue);
@@ -223,7 +215,6 @@ void exitP(){
     }
     CPUScheduler();
 }
-
 
 void quantum(){
     PCB* currentRunning = List_last(runningProcessQueue);
@@ -269,17 +260,43 @@ void quantum(){
     CPUScheduler();
 }
 
+PCB* findPCBByPID(int pid){
+    PCB* procs= NULL;
+    List_first(readyQueueHigh);
+    List_first(readyQueueNormal);
+    List_first(readyQueueLow);
+    List_first(runningProcessQueue);
+    List_first(sendBlockedQueue);
+    List_first(receiveOperationQueue);
+    if (List_search(readyQueueHigh, compareInt, &pid) != NULL) {
+        procs = List_curr(readyQueueHigh);
+    } else if (List_search(readyQueueNormal, compareInt, &pid) != NULL) {
+        procs = List_curr(readyQueueNormal);
+    } else if (List_search(readyQueueLow, compareInt, &pid) != NULL) {
+        procs = List_curr(readyQueueLow);
+    } else if (List_search(runningProcessQueue, compareInt, &pid) != NULL) {
+        procs = List_curr(runningProcessQueue);
+    }else if (List_search(sendBlockedQueue, compareInt, &pid) != NULL) {
+        procs = List_curr(sendBlockedQueue);
+    }else if (List_search(receiveOperationQueue, compareInt, &pid) != NULL) {
+        procs = List_curr(receiveOperationQueue);
+    }else{
+        printf("Cannot find the pid\n");
+    }
+    return procs;
+}
+
 void Send(int pid, const char* msg){
     PCB* procs;
     PCB* senderID = List_last(runningProcessQueue);   
     // checks if there's a process in the receive queue waiting to receive a message with the specified PID
     if (List_search(receiveOperationQueue, compareInt, &pid) != NULL) {
+        printf("seg fault in receiveing list \n");
         procs = List_curr(receiveOperationQueue);
-        procs->procmsg->sender= senderID->pid;
-        procs->procmsg->receiver= pid;
-        strcpy(procs->procmsg->type, "SEND");
+        procs->procmsg->sender = senderID->pid;
+        procs->procmsg->receiver = pid;
+        procs->procmsg->type_index = 1;
         strcpy(procs->procmsg->message, msg);
-        strcpy(procs->state, "READY");
         PCB* p = List_remove(receiveOperationQueue);
         switch(p->priority) {
             case 0: // High priority
@@ -304,20 +321,22 @@ void Send(int pid, const char* msg){
         printf("Send successful: Process %d sent message to Process %d\n", senderID->pid, pid);
     }
     else{
+        printf("seg fault in else part of send list \n");
         procs = findPCBByPID(pid);
         if(procs != NULL && pid != 0 ){  // not sure if we want init process to send message but it cannot be blocked
             PROC_MSG* pmsg = malloc(sizeof(pmsg));
-            pmsg->message = malloc(sizeof(char) * 100);
+            pmsg->message = (char*) malloc(sizeof(char) * 40);
             pmsg->sender = senderID->pid;
             pmsg->receiver = pid;
-            strcpy(pmsg->type, "SEND");
+            pmsg->type_index = 1;
             strcpy(pmsg->message, msg);
             List_append(msgQueue, pmsg); // list_add
             strcpy(senderID->state, "BLOCKED");
+            List_last(runningProcessQueue);
             PCB* p = List_trim(runningProcessQueue);
             List_append(sendBlockedQueue, p);
             CPUScheduler();
-            printf("Sender Blocked: Process %d sent message to Process %d\n", senderID->pid, pid);
+            printf("Sender Blocked: Process: %d wants to message Process: %d\n", senderID->pid, pid);
         }
     }
 }
@@ -326,16 +345,19 @@ void receive(){
     // check if there is msg for receiver 
     PCB* receiver = List_last(runningProcessQueue);   
     int receiverPid = receiver->pid;
+    List_first(msgQueue);
     if (List_search(msgQueue, compareInt, &receiverPid) != NULL) {
-        PCB* procs = List_curr(msgQueue);
-        printf("-------");
-        printf("Sender Message:");
-        printf("Type: %s\n", procs->procmsg->type);
-        printf("Sender pid: %d - ", procs->procmsg->sender);
-        printf("Message: %s\n", procs->procmsg->message);
-        printf("-------");
+        printf("if part\n");
+        PROC_MSG* procs = List_curr(msgQueue);
+        printf("-------\n");
+        printf("Sender Message:\n");
+        printf("Type: %s\n", process_states[procs->type_index]);
+        printf("Sender pid: %d - ", procs->sender);
+        printf("Message: %s\n", procs->message);
+        printf("-------\n");
         List_remove(msgQueue);
     }else{
+        printf("else part\n");
         if (receiverPid != 0) {
 			receiver = List_trim(runningProcessQueue);
             strcpy(receiver->state, "BLOCKED");
@@ -348,12 +370,13 @@ void receive(){
 void reply(int pid, char *msg){
     // unblocks sender and delivers reply : success or failure
     PCB* receiver = List_last(runningProcessQueue);   
+    List_first(sendBlockedQueue);
      if (List_search(sendBlockedQueue, compareInt, &pid) != NULL) {
         PCB* procs = List_curr(sendBlockedQueue);
  
         procs->procmsg->sender= receiver->pid;
         procs->procmsg->receiver= pid;
-        strcpy(procs->procmsg->type, "REPLY");
+        procs->procmsg->type_index = 3;
         strcpy(procs->procmsg->message, msg);
 
         strcpy(procs->state, "READY");
@@ -383,7 +406,7 @@ void reply(int pid, char *msg){
                 printf("Reply - pid:%d is now in ready queue.\n", p->pid);
 		    }
     }else{
-        printf("reply: FAIL, PID not found");
+        printf("reply: FAIL, PID not found\n");
     }
 }
 
@@ -399,15 +422,16 @@ void procinfo(int pid) {
 		printf("Given Pid is invalid. Not found");
 	}
 }
+
 void PrintList(List* list){
     PCB *p = List_first(list);
-    while (p) {
+    p = List_prev(list);
+    while (p = List_next(list)) {
         printf("Running Process Queue \n");
         printf("Process ID:: %i\n", p->pid);
         printf("Process Priority: %i\n", p->priority);
         printf("Process State: %s\n", p->state);
         printf("Process Msg: %s\n", p->procmsg->message);
-        p = List_next(list);
     }
 }
 	
@@ -419,29 +443,38 @@ void totalinfo() {
 	printf("Process State: %s\n", prc->state);
 	printf("Process Msg: %s\n", prc->procmsg->message);
 	
-	// Ready QUEUE
-	printf("READY QUEUES");
+	//Ready QUEUE
+	printf("READY QUEUES\n");
     PrintList(readyQueueHigh);
     PrintList(readyQueueNormal);
     PrintList(readyQueueLow);
 
 	// Send QUEUE
-	printf("SEND QUEUE");
+	printf("SEND QUEUE\n");
 	PrintList(sendBlockedQueue);
 
     // Receive QUEUE
-	printf("RECEIVE QUEUE");
+	printf("RECEIVE QUEUE\n");
 	PrintList(receiveOperationQueue);
 
     // MSG QUEUE
-	printf("MESSAGE QUEUE");
+	printf("MESSAGE QUEUE\n");
 	PrintList(msgQueue);
 
     // SEM QUEUE
-	printf("SEM QUEUES");
-
+	// printf("SEM QUEUES\n");
+    // for (int i = 0; i < 5; i++) {
+    //     printf("Semaphore %d - Blocked Processes: \n", i);
+    //     List* blocked = semaphores[i].blockedProcesses;
+    //     if(blocked!=NULL){
+    //         printf("----  blocked list ---- %d: \n", i);
+    //         PrintList(blocked);
+            
+    //     }
+    // }
 
 }
+
 void newSemaphore(int semaphoreID, int initialValue) {
     if (semaphoreID < 0 || semaphoreID >= 5) {
         printf("Invalid semaphore ID\n");
@@ -457,40 +490,45 @@ void semaphoreP(int semaphoreID) {
         printf("Invalid semaphore ID\n");
         return;
     }
-    if (semaphores[semaphoreID].value > 0) {
-        semaphores[semaphoreID].value--;
-    } else {
-
-        PCB* currentProcess = List_curr(runningProcessQueue);
-        strcpy(currentProcess->state, "blocked");
-        List_append(semaphores[semaphoreID].blockedProcesses, currentProcess);
-        List_remove(runningProcessQueue);
-        printf("Process id %d blocked\n", currentProcess->pid);
-        CPUScheduler(); // call scheduler?
-    }
-    printf("Process performed P operation on semaphore %d\n", semaphoreID);
+	PCB* currentProcess = List_last(runningProcessQueue);
+	if (currentProcess->pid != 0) {
+		semaphores[semaphoreID].value--;
+		if (semaphores[semaphoreID].value < 0) {
+			currentProcess = List_trim(runningProcessQueue);
+			strcpy(currentProcess->state, "BLOCKED");
+			List_append(semaphores[semaphoreID].blockedProcesses, currentProcess);
+            printf("Process performed P operation on semaphore %d\n", semaphoreID);
+			CPUScheduler(); // Call scheduler as current process is blocked
+		}
+	}else{
+		printf(" Init Process cannot perfor P operation");
+		return;
+	}
 }
 
 void semaphoreV(int semaphoreID) {
-    if (semaphoreID < 0 || semaphoreID >= 5) {
+	if (semaphoreID < 0 || semaphoreID >= 5) {
         printf("Invalid semaphore ID\n");
         return;
     }
     semaphores[semaphoreID].value++;
-    if (List_count(semaphores[semaphoreID].blockedProcesses) > 0) {
-        PCB* unblockedProcess = List_trim(semaphores[semaphoreID].blockedProcesses);
-        strcpy(unblockedProcess->state, "ready");
-        switch(unblockedProcess->priority) {
-            case 0: List_prepend(readyQueueHigh, unblockedProcess); break;
-            case 1: List_prepend(readyQueueNormal, unblockedProcess); break;
-            case 2: List_prepend(readyQueueLow, unblockedProcess); break;
-            default: printf("Invalid priority level\n"); break;
+	if (semaphores[semaphoreID].value <= 0) {
+		PCB* p = List_trim(semaphores[semaphoreID].blockedProcesses);
+        if(p!=NULL){
+            switch(p->priority) {
+                case 0: List_prepend(readyQueueHigh, p); break;
+                case 1: List_prepend(readyQueueNormal, p); break;
+                case 2: List_prepend(readyQueueLow, p); break;
+                default: printf("Invalid priority level\n"); break;
+            }
+            strcpy(p->state, "READY");
+            List_trim(semaphores[semaphoreID].blockedProcesses);
+            printf("SUCCESS: Process with pid %d unblocked from semaphoreID: %d and moved to ready queue\n", p->pid, semaphoreID);
         }
-        printf("Process with pid %d unblocked from semaphore %d\n", unblockedProcess->pid, semaphoreID);
-    } else {
-        printf("No processes waiting on semaphore %d\n", semaphoreID);
-    }
+        
+	}	
 }
+
 void initSystem() {
     // Initialize system lists
     readyQueueHigh = List_create();
@@ -506,10 +544,8 @@ void initSystem() {
 	init->pid = 0;
 	init->priority = 0;
 	strcpy(init->state, "ready");
-    //strcpy(init->message, "init Process");
     List_append(runningProcessQueue, init);
-    
-
+    strcpy(init->state, "READY");
 }
 
 int main() {
@@ -521,7 +557,7 @@ int main() {
     char command;
     int pid, semID, initValue, priority;
     char message[100]; // Assuming messages are no longer than 100 characters
-
+    
     
     while (1) {
         printf("Enter command: ");
@@ -608,65 +644,3 @@ int main() {
     return 0;
 
 }
-
-/*
-
-void semaphoreP(int semaphoreID) {
-    if (semaphoreID < 0 || semaphoreID >= 5) {
-        printf("Invalid semaphore ID\n");
-        return;
-    }
-	PCB* currentProcess = ListLast(runningProcessQueue);
-	if (currentProcess->pid != 0) {
-		semaphores[semaphoreID].value--;
-		if (semaphores[semaphoreID].value < 0) {
-			currentProcess = ListTrim(runningProcessQueue);
-			strcpy(currentProcess->state, "BLOCKED");
-			List_append(semaphores[semaphoreID].blockedProcesses, currentProcess);
-			CPUScheduler(); // Call scheduler as current process is blocked
-		}
-
-	}else{
-		printf(" Init Process cannot perfor P operation");
-		return;
-	}
-    printf("Process performed P operation on semaphore %d\n", semaphoreID);
-}
-void V(int sid) {
-	if (semaphoreID < 0 || semaphoreID >= 5) {
-        printf("Invalid semaphore ID\n");
-        return;
-    }
-    semaphores[semaphoreID].value++;
-	if (semaphores[semaphoreID].value <= 0) {
-		PCB* p = ListTrim(semaphores[semaphoreID].blockedProcesses);
-        if(p!=NULL){
-            switch(p->priority) {
-                case 0: // High priority
-                    if (List_append(readyQueueHigh, p) == LIST_FAIL) {
-                        printf("Failed to add process to high priority ready queue\n");
-                    }
-                    break;
-                case 1: // Normal priority
-                    if (List_append(readyQueueNormal, p) == LIST_FAIL) {
-                        printf("Failed to add process to normal priority ready queue\n");
-                    }
-                    break;
-                case 2: // Low priority
-                    if (List_append(readyQueueLow, p) == LIST_FAIL) {
-                        printf("Failed to add process to low priority ready queue\n");
-                    }
-                    break;
-                default:
-                    printf("Invalid priority level\n");
-                    break;
-            }
-
-            strcpy(p->state, "READY");
-            List_trim(semaphores[semaphoreID].blockedProcesses);
-        }
-        printf("SUCCESS");
-        printf("pid: %i into READY QUEUE\n", p->pid);
-	}	
-}
-*/
