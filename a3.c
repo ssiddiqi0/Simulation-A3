@@ -439,39 +439,76 @@ void printSemList(){
 			printf("sid%i: ", s->pid);
 			PrintList(s->blockedProcesses);
 		}
-	}
+	}else{
+        printf("semaphoreQueue is empty\n");
+    }
 }
+
 void totalinfo() {
-	PCB* prc = List_last(runningProcessQueue);
-    printf("Running Process Queue \n");
-	printf("Process ID:: %i\n", prc->pid);
-	printf("Process Priority: %i\n", prc->priority);
-	printf("Process State: %s\n", prc->state);
-	printf("Process Msg: %s\n", prc->procmsg->message);
+    if(List_count(runningProcessQueue)>0){
+        PCB* prc = List_last(runningProcessQueue);
+        printf("Running Process Queue \n");
+        printf("Process ID:: %i\n", prc->pid);
+        printf("Process Priority: %i\n", prc->priority);
+        printf("Process State: %s\n", prc->state);
+        if(prc->procmsg != NULL){
+            printf("Process Msg: %s\n", prc->procmsg->message);
+        }
+    }else{
+        printf("Running Queue is empty\n");
+    }
 	
 	//Ready QUEUE
 	printf("-----------READY QUEUES HIGH PRIORITY-------------\n");
-    PrintList(readyQueueHigh);
+    if(List_count(readyQueueHigh) > 0){
+        PrintList(readyQueueHigh);
+    }else{
+        printf("Ready Queue with high priority is empty\n");
+    }
+
     printf("-----------READY QUEUES NORMAL PRIORITY-------------\n");
-    PrintList(readyQueueNormal);
+    if(List_count(readyQueueNormal) > 0){
+        PrintList(readyQueueNormal);
+    }else{
+        printf("Ready Queue with Normal priority is empty\n");
+    }
+
     printf("-----------READY QUEUES LOW PRIORITY-------------\n");
-    PrintList(readyQueueLow);
+    if(List_count(readyQueueLow) > 0){
+        PrintList(readyQueueLow);
+    }else{
+        printf("Ready Queue with Low priority is empty\n");
+    }
 
 	// Send QUEUE
 	printf("----------------SEND QUEUE------------------------\n");
-	PrintList(sendBlockedQueue);
+    if(List_count(sendBlockedQueue) > 0){
+        PrintList(sendBlockedQueue);
+    }else{
+        printf("sendBlockedQueue is empty\n");
+    }
 
     // Receive QUEUE
 	printf("-----------------RECEIVE QUEUE----------------------\n");
-	PrintList(receiveOperationQueue);
+    if(List_count(receiveOperationQueue) > 0){
+        PrintList(receiveOperationQueue);
+    }else{
+        printf("receiveOperationQueue is empty\n");
+    }
 
     // MSG QUEUE
 	printf("-----------------MESSAGE QUEUE-----------------------\n");
 	PrintList(msgQueue);
+    if(List_count(msgQueue) > 0){
+        PrintList(msgQueue);
+    }else{
+        printf("msgQueue is empty\n");
+    }
 
     printf("----------------SEM QUEUES----------------------\n");
 	printSemList();
 }
+
 Semaphore* findSem(int pid){
     Semaphore *found = NULL;
     found = List_search(semaphoreQueue, compareInt, &pid);
