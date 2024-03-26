@@ -1,2 +1,5 @@
 # Simulation-A3
 PCB and Process Scheduling Simulation
+
+INIT process description:
+In our simulation, init can initiate most commands but is limited in its participation in commands that would alter its constant presence, such as kill or exit. Specifically, the init process cannot be terminated unless it is the sole remaining process in the system. This restriction is crucial for preventing scenarios where the system is left without any running processes, and so ensuring that there's always a baseline state from which the system can operate. On the other hand, init can participate in the following commands: Create (C), Fork (F), Quantum (Q), New Semaphore (N), Semaphore P and V operations, Send (S), Reply (Y), Receive (R), Process Info (I), and Total System Info (T). However, its ability to execute some operations, like being forked (F), or engaging in messaging (sending, replying, receiving), is not restricted by its definition but rather by logical constraints and the simulation's rules.
