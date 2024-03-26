@@ -43,7 +43,7 @@ static int nextPID = 1;
 void createProcess(int priority){
     PCB* newProcess = (PCB*)malloc(sizeof(PCB));
     if (newProcess == NULL){
-        printf("Failed to allocate memory");
+        printf("Failed to allocate memory\n");
         return;
     }
     newProcess->pid = nextPID++;
@@ -58,40 +58,37 @@ void createProcess(int priority){
     newProcess->procmsg->message = (char*) malloc(sizeof(char) * 100);
 	strcpy(newProcess->procmsg->message, "");
     
-
-    // PROC_MSG* newmsg = malloc(sizeof(PROC_MSG));
-	// newmsg->message = malloc(sizeof(char) * 100);
-    // strcpy(newmsg->message, "");
-    // newmsg->sender = -1;
-    // newmsg->receiver = -1;
-    // newProcess->procmsg = newmsg;
-   
-    
     switch(priority) {
         case 0: // High priority
             if (List_append(readyQueueHigh, newProcess) == LIST_FAIL) {
                 printf("Failed to add process to high priority ready queue\n");
                 free(newProcess);
+                
             }
+            printf("Process with pID %d created and placed in ready Q with priority: %d\n", newProcess->pid, priority);
             break;
         case 1: // Normal priority
             if (List_append(readyQueueNormal, newProcess) == LIST_FAIL) {
                 printf("Failed to add process to normal priority ready queue\n");
                 free(newProcess);
+                
             }
+            printf("Process with pID %d created and placed in ready Q with priority: %d\n", newProcess->pid, priority);
             break;
         case 2: // Low priority
             if (List_append(readyQueueLow, newProcess) == LIST_FAIL) {
                 printf("Failed to add process to low priority ready queue\n");
                 free(newProcess);
+                
             }
+            printf("Process with pID %d created and placed in ready Q with priority: %d\n", newProcess->pid, priority);
             break;
         default:
             printf("Invalid priority level\n");
             free(newProcess);
             break;
     }
-    printf("Process with pID %d create and placed in ready Q with priority: %d\n", newProcess->pid, priority);
+    
 }
 
 
@@ -117,10 +114,10 @@ void CPUScheduler(){
 		}
 		else {
             strcpy(nextProcess->state, "RUNNING");
-			printf("SUCCESS: CPU Scheduler ");
+			printf("SUCCESS: CPU Scheduler \n");
             printf("pid: %d is Running now \n", nextProcess->pid);
             if (strlen(nextProcess->procmsg->message) != 0) {
-                printf("%s",nextProcess->procmsg->message);
+                printf("%s\n",nextProcess->procmsg->message);
             }
             nextProcess->procmsg->receiver = -1;
             nextProcess->procmsg->sender = -1;
@@ -167,7 +164,9 @@ void kill(int pid){
             kill_process = List_last(runningProcessQueue);
             if(kill_process->pid == 0) {
                 if(List_remove(runningProcessQueue)!=NULL){
-                    printf("Kill: Init with pid: %d\n", pid);
+                    printf("Kill: Init with pid %d. Terminating simulation\n", pid);
+                    free(kill_process);
+                    exit(0);
                 }
             }
         }
@@ -198,11 +197,7 @@ void kill(int pid){
     }else{
         printf("Kill: not found in search\n");
     }
-    // if(kill_process){
-    //     free(kill_process->procmsg->message);
-    //     free(kill_process->procmsg);
-    //     free(kill_process);
-    // }
+
 
 }
 
@@ -211,14 +206,14 @@ void exitP(){
             PCB* kill_process = List_last(runningProcessQueue);
             if(kill_process->pid == 0) {
                 if(List_remove(runningProcessQueue)!=NULL){
-                    printf("Kill: Init with pid: %d\n", kill_process->pid );
+                    printf("Kill: Init with pid %d\n", kill_process->pid );
                 }
             }
     }
     else if(List_count(runningProcessQueue) == 2){
         PCB* p = List_last(runningProcessQueue);
         if(List_remove(runningProcessQueue) != NULL){
-            printf("Kill: Init with pid: %d\n", p->pid);
+            printf("Kill: Init with pid %d\n", p->pid);
             free(p->procmsg->message);
             free(p->procmsg);
             free(p);
@@ -357,7 +352,7 @@ void receive(){
     List_first(msgQueue);
     if (List_search(msgQueue, compareInt, &receiverPid) != NULL) {
         PROC_MSG* procs = List_curr(msgQueue);
-        printf("---RECIVE---\n");
+        printf("---RECIEVE---\n");
         printf("Sender Message:\n");
         printf("Type: %s\n", process_states[procs->type_index]);
         printf("Sender pid: %d - ", procs->sender);
@@ -418,15 +413,16 @@ void reply(int pid, char *msg){
 }
 
 void procinfo(int pid) {
+
 	PCB* prc = findPCBByPID(pid);
 	if (prc != NULL) {
-		printf("Process ID:: %i\n", prc->pid);
+		printf("Process ID: %i\n", prc->pid);
 		printf("Process Priority: %i\n", prc->priority);
 		printf("Process State: %s\n", prc->state);
 		printf("Process Msg: %s\n", prc->procmsg->message);
 	}
 	else {
-		printf("Given Pid is invalid. Not found");
+		printf("Given Pid is invalid. Not found\n");
 	}
 }
 
@@ -435,7 +431,7 @@ void PrintList(List* list){
     p = List_prev(list);
     while (p = List_next(list)) {
         printf("Running Process Queue \n");
-        printf("Process ID:: %i\n", p->pid);
+        printf("Process ID: %i\n", p->pid);
         printf("Process Priority: %i\n", p->priority);
         printf("Process State: %s\n", p->state);
         printf("Process Msg: %s\n", p->procmsg->message);
@@ -460,7 +456,7 @@ void totalinfo() {
     if(List_count(runningProcessQueue)>0){
         PCB* prc = List_last(runningProcessQueue);
         printf("Running Process Queue \n");
-        printf("Process ID:: %i\n", prc->pid);
+        printf("Process ID: %i\n", prc->pid);
         printf("Process Priority: %i\n", prc->priority);
         printf("Process State: %s\n", prc->state);
         if(prc->procmsg != NULL){
@@ -569,7 +565,7 @@ void semaphoreP(int semaphoreID) {
             printf("SemphoreP: Given semphore not found\n");
         }
 	}else{
-		printf(" Init Process cannot perfor P operation");
+		printf("Init Process cannot perform P operation \n");
 		return;
 	}
 }
@@ -635,43 +631,47 @@ int main() {
 
         switch (toupper(command)) {
             case 'C':
-                printf("Enter priority level (0, 1, 2)\n");
+                printf("---CREATE---\nEnter priority level (0, 1, 2)\n");
                 scanf("%d", &priority);
                 createProcess(priority);
                 break;
             case 'F': // Fork
+                printf("---FORK---\n");
                 forkP();
                 break;
             case 'K': // Kill
-                printf("Enter PID to kill: ");
+                printf("---KILL---\nEnter PID to kill: \n");
                 scanf("%d", &pid);
                 kill(pid);
                 break;
             case 'E': // Exit
+                printf("---EXIT---\n");
                 exitP();
                 break;
             case 'Q': // Quantum
+                printf("---QUANTUM---\n");
                 quantum();
                 break;
             case 'N':
-                printf("Please enter the semaphore ID (0-4): \n");
+                printf("---NEW SEMAPHORE---\nPlease enter the semaphore ID (0-4): \n");
                 scanf("%d", &semID);
                 printf("Please enter the initial value: \n");
                 scanf("%d", &initValue);
                 newSemaphore(semID, initValue);
                 break;
             case 'P':
+                printf("---SEMAPHORE P---\n");
                 printf("Please enter the semaphore ID (0-4): \n");
                 scanf("%d", &semID);
                 semaphoreP(semID);
                 break;
             case 'V':
-                printf("Please enter the semaphore ID (0-4): \n");
+                printf("---SEMAPHORE V---\nPlease enter the semaphore ID (0-4): \n");
                 scanf("%d", &semID);
                 semaphoreV(semID);
                 break;
             case 'S': // Send
-                printf("Enter receiver PID: \n");
+                printf("---SEND---\nEnter receiver PID: \n");
                 scanf("%d", &pid); 
                 getchar(); // Consume the newline character left in the input buffer
                 printf("Enter message: \n");
@@ -684,7 +684,7 @@ int main() {
                 Send(pid, message);
                 break;
             case 'Y': // Reply
-                printf("Enter receiver PID: \n");
+                printf("---REPLY---\nEnter receiver PID: \n");
                 scanf("%d", &pid); // Read PID and message
                 getchar();
                 printf("Enter your message: \n");
@@ -697,14 +697,16 @@ int main() {
                 reply(pid, message);
                 break;
             case 'R': // Receive
+                printf("---Recieve---\n");
                 receive();
                 break;
             case 'I': // Process info
-                printf("Enter PID for info: ");
+                printf("---Process Info---\nEnter PID for info: ");
                 scanf("%d", &pid);
                 procinfo(pid);
                 break;
             case 'T': // Total system info
+                printf("---Total System Info---\n");
                 totalinfo();
                 break;
             default:
